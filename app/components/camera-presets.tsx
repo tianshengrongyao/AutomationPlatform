@@ -1,3 +1,9 @@
+/**
+ * 运镜预设 & 风格预设
+ * 定义 8 种镜头运动方式和 8 种画面风格，以按钮网格展示
+ * 选中的预设会自动拼接 prompt 前缀
+ */
+
 "use client";
 
 import { Camera } from "lucide-react";

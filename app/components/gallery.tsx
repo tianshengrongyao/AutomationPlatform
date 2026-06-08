@@ -1,3 +1,8 @@
+/**
+ * 灵感画廊
+ * 已完成作品的卡片墙，支持悬停预览、一键加载模板参数「做同款」
+ */
+
 "use client";
 
 import { Eye, Sparkles, Wand2 } from "lucide-react";

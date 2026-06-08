@@ -1,12 +1,22 @@
+/**
+ * 请求参数校验
+ * 使用 Zod 库定义所有输入规则，不合规的请求会被拦截
+ */
+
 import { z } from "zod";
 
+/** 公网 URL 校验：必须是 http/https 开头的合法 URL */
 const publicUrl = z
   .string()
   .url("请输入有效的公网 URL。")
   .refine((value) => /^https?:\/\//i.test(value), "URL 必须以 http:// 或 https:// 开头。");
 
+/** 创建视频任务的请求校验规则 */
 export const createGenerationSchema = z.object({
+  // 创作描述：1-8000 字符
   prompt: z.string().trim().min(1, "请输入视频创意或脚本。").max(8000, "创作描述不能超过 8000 字符。"),
+
+  // 媒体素材列表（图片/视频/音频 URL）
   media: z
     .array(
       z.object({
@@ -15,6 +25,8 @@ export const createGenerationSchema = z.object({
       })
     )
     .default([]),
+
+  // Base64 图片上传（第一版未启用，最多 4 张，单张不超过约 7MB）
   uploadedImages: z
     .array(
       z.object({
@@ -28,6 +40,8 @@ export const createGenerationSchema = z.object({
     )
     .max(4, "第一版最多上传 4 张图片。")
     .default([]),
+
+  // 生成参数
   options: z.object({
     ratio: z.enum(["adaptive", "16:9", "4:3", "1:1", "3:4", "9:16", "21:9"]),
     resolution: z.enum(["480p", "720p", "1080p"]),

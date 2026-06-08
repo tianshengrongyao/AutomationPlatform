@@ -1,3 +1,8 @@
+/**
+ * 左侧工具栏
+ * 创作模式切换、视频比例选择、运镜预设、画面风格预设
+ */
+
 "use client";
 
 import { Film, Image as ImageIcon, X } from "lucide-react";

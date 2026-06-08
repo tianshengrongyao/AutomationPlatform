@@ -1,3 +1,8 @@
+/**
+ * 明暗主题切换按钮
+ * 太阳/月亮图标，点击切换并持久化到 localStorage
+ */
+
 "use client";
 
 import { Moon, Sun } from "lucide-react";

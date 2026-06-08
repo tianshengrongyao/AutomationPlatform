@@ -1,3 +1,8 @@
+/**
+ * 模型选择器
+ * 顶栏下拉菜单，切换 Seedance 2.0 / Fast / 720p 等模型
+ */
+
 "use client";
 
 import { ChevronDown, Cpu } from "lucide-react";

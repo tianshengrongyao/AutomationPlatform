@@ -1,3 +1,8 @@
+/**
+ * 登录页
+ * 品牌展示 + 口令输入，验证通过后进入工作台
+ */
+
 "use client";
 
 import { Loader2, Lock, Sparkles, Wand2 } from "lucide-react";

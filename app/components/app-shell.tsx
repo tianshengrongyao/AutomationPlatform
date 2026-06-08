@@ -1,3 +1,14 @@
+/**
+ * AppShell — 主应用外壳
+ *
+ * 职责：
+ * - 顶栏：品牌、模型选择、创作/画廊视图切换、主题切换、退出
+ * - 三栏布局：侧栏 + 创作区 + 结果面板
+ * - 所有状态管理：表单输入、任务列表、轮询、增删改查
+ *
+ * 这是整个前端最核心的组件，约 400 行
+ */
+
 "use client";
 
 import {
@@ -54,11 +65,11 @@ export default function AppShell({
   tasks: StoredTask[];
   setTasks: React.Dispatch<React.SetStateAction<StoredTask[]>>;
 }) {
-  // ---- View state ----
+  // ====== 视图状态 ======
   const [view, setView] = useState<ViewMode>("create");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ---- Creation state ----
+  // ====== 创作表单状态 ======
   const [mode, setMode] = useState<CreationMode>("text-to-video");
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -78,7 +89,7 @@ export default function AppShell({
   const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
   const [modelId, setModelId] = useState("seedance-2.0-1080");
 
-  // ---- Task state ----
+  // ====== 任务状态 ======
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -86,14 +97,14 @@ export default function AppShell({
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
 
-  // ---- Notice auto-dismiss ----
+  // ====== 提示自动消失（4 秒后）======
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(null), 4000);
     return () => clearTimeout(timer);
   }, [notice]);
 
-  // ---- Load tasks ----
+  // ====== 加载任务列表 ======
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
@@ -111,7 +122,7 @@ export default function AppShell({
     void loadTasks();
   }, [loadTasks]);
 
-  // ---- Auto-poll active tasks ----
+  // ====== 自动轮询：每 5 秒刷新活跃任务状态 ======
   useEffect(() => {
     if (!tasks.some(isActiveTask)) return;
     const timer = window.setInterval(() => {
@@ -123,7 +134,7 @@ export default function AppShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks]);
 
-  // ---- Refresh single task ----
+  // ====== 刷新单个任务 ======
   async function refreshTask(taskId: string, showNotice = true) {
     try {
       const data = await fetchJson<{ task: StoredTask }>(
@@ -140,13 +151,13 @@ export default function AppShell({
     }
   }
 
-  // ---- Copy task ID ----
+  // ====== 复制任务 ID 到剪贴板 ======
   async function copyTaskId(taskId: string) {
     await navigator.clipboard.writeText(taskId);
     setNotice({ tone: "info", text: "任务 ID 已复制。" });
   }
 
-  // ---- Delete task ----
+  // ====== 删除任务（带确认弹窗）======
   async function removeTask(taskId: string) {
     if (!window.confirm("确定从历史记录里删除这个任务吗？")) return;
     setDeletingTaskId(taskId);
@@ -170,7 +181,7 @@ export default function AppShell({
     }
   }
 
-  // ---- Build and submit ----
+  // ====== 构建请求体并提交任务 ======
   function buildRequest(): CreateGenerationRequest {
     // 构建带运镜和风格前缀的完整 prompt
     const cameraPreset = CAMERA_PRESETS.find((p) => p.id === selectedCamera);
@@ -234,7 +245,7 @@ export default function AppShell({
     }
   }
 
-  // ---- Gallery "做同款" ----
+  // ====== 画廊「做同款」：加载模板参数 ======
   function useTemplate(task: StoredTask) {
     setPrompt(task.prompt);
     setRatio(task.request.options.ratio);
@@ -256,7 +267,7 @@ export default function AppShell({
     setNotice({ tone: "info", text: "已加载模板参数，可直接生成或修改后提交。" });
   }
 
-  // ---- Gallery preview ----
+  // ====== 画廊「查看」：切换到结果面板 ======
   function previewInResult(taskId: string) {
     setSelectedTaskId(taskId);
     setView("create");
