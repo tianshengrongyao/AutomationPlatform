@@ -278,7 +278,7 @@ export default function AppShell({
 
           <div className="topbar-brand">
             <Image src="/brand-logo.png" alt="Seedance" width={34} height={34} priority />
-            <span className="brand-text">Seedance</span>
+            <span className="brand-text">天生荣耀</span>
           </div>
 
           <ModelSelector value={modelId} onChange={setModelId} />
