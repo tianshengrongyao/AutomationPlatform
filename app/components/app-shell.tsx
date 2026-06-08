@@ -61,9 +61,6 @@ export default function AppShell({
   // ---- Creation state ----
   const [mode, setMode] = useState<CreationMode>("text-to-video");
   const [prompt, setPrompt] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [audioUrl, setAudioUrl] = useState("");
   const [ratio, setRatio] = useState("9:16");
   const [resolution, setResolution] = useState("1080p");
   const [duration, setDuration] = useState(5);
@@ -183,14 +180,9 @@ export default function AppShell({
     const negativePrefix = negativePrompt.trim() ? `排除以下内容：${negativePrompt.trim()}` : "";
     const fullPrompt = [finalPrompt, negativePrefix].filter(Boolean).join("\n");
 
-    const media = [];
-    if (imageUrl.trim()) media.push({ type: "image_url" as const, url: imageUrl.trim() });
-    if (videoUrl.trim()) media.push({ type: "video_url" as const, url: videoUrl.trim() });
-    if (audioUrl.trim()) media.push({ type: "audio_url" as const, url: audioUrl.trim() });
-
     return {
       prompt: fullPrompt,
-      media,
+      media: [],
       uploadedImages: [],
       options: {
         ratio,
@@ -245,13 +237,6 @@ export default function AppShell({
     setReturnLastFrame(task.request.options.returnLastFrame);
     setSeed(task.request.options.seed ?? -1);
     setPriority(task.request.options.priority);
-    // Extract URLs from media
-    const imgMedia = task.request.media.find((m) => m.type === "image_url");
-    const vidMedia = task.request.media.find((m) => m.type === "video_url");
-    const audMedia = task.request.media.find((m) => m.type === "audio_url");
-    setImageUrl(imgMedia?.url || "");
-    setVideoUrl(vidMedia?.url || "");
-    setAudioUrl(audMedia?.url || "");
     setView("create");
     setNotice({ tone: "info", text: "已加载模板参数，可直接生成或修改后提交。" });
   }
@@ -333,12 +318,6 @@ export default function AppShell({
             mode={mode}
             prompt={prompt}
             onPromptChange={setPrompt}
-            imageUrl={imageUrl}
-            onImageUrlChange={setImageUrl}
-            videoUrl={videoUrl}
-            onVideoUrlChange={setVideoUrl}
-            audioUrl={audioUrl}
-            onAudioUrlChange={setAudioUrl}
             duration={duration}
             onDurationChange={setDuration}
             resolution={resolution}
