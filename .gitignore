@@ -4,6 +4,7 @@ node_modules/
 dist/
 coverage/
 data/
+!data/.gitkeep
 public/generated-videos/
 .playwright-cli/
 *.tsbuildinfo
