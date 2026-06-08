@@ -3,8 +3,11 @@
 import {
   ChevronDown,
   ChevronUp,
+  Image as ImageIcon,
+  Music as MusicIcon,
   Play,
-  Settings2
+  Settings2,
+  Video
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import type { CreationMode } from "./sidebar";
@@ -30,6 +33,12 @@ export default function Composer({
   mode,
   prompt,
   onPromptChange,
+  imageUrl,
+  onImageUrlChange,
+  videoUrl,
+  onVideoUrlChange,
+  audioUrl,
+  onAudioUrlChange,
   duration,
   onDurationChange,
   resolution,
@@ -54,6 +63,12 @@ export default function Composer({
   mode: CreationMode;
   prompt: string;
   onPromptChange: (value: string) => void;
+  imageUrl: string;
+  onImageUrlChange: (value: string) => void;
+  videoUrl: string;
+  onVideoUrlChange: (value: string) => void;
+  audioUrl: string;
+  onAudioUrlChange: (value: string) => void;
   duration: number;
   onDurationChange: (value: number) => void;
   resolution: string;
@@ -197,6 +212,46 @@ export default function Composer({
             ))}
           </div>
         ) : null}
+      </div>
+
+      {/* 媒体 URL 输入 */}
+      <div className="media-section">
+        <span className="media-section-label">参考素材（公网 URL）</span>
+        <div className="media-urls">
+          <div className="media-url-field">
+            <label>
+              <ImageIcon size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden="true" />
+              图片 URL
+            </label>
+            <input
+              value={imageUrl}
+              onChange={(event) => onImageUrlChange(event.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+          <div className="media-url-field">
+            <label>
+              <Video size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden="true" />
+              视频 URL
+            </label>
+            <input
+              value={videoUrl}
+              onChange={(event) => onVideoUrlChange(event.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+          <div className="media-url-field">
+            <label>
+              <MusicIcon size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden="true" />
+              音频 URL
+            </label>
+            <input
+              value={audioUrl}
+              onChange={(event) => onAudioUrlChange(event.target.value)}
+              placeholder="https://..."
+            />
+          </div>
+        </div>
       </div>
 
       {/* 高级参数 */}
