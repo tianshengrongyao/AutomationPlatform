@@ -1497,6 +1497,7 @@ video {
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: #000;
+  max-height: 320px;
 }
 
 .video-player-wrap video {
@@ -1618,7 +1619,7 @@ video {
 /* ---- Video skeleton ---- */
 .video-skeleton {
   aspect-ratio: 9 / 16;
-  max-height: 200px;
+  width: 100%;
   background: var(--color-bg-elevated);
   display: grid;
   place-items: center;
