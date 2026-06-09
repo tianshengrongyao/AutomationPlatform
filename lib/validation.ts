@@ -5,11 +5,18 @@
 
 import { z } from "zod";
 
-/** 公网 URL 校验：必须是 http/https 开头的合法 URL */
+/**
+ * 素材 URL 校验
+ * 支持两种形式：
+ * 1. 公网 http/https URL
+ * 2. 本地上传路径 /uploads/...
+ */
 const publicUrl = z
   .string()
-  .url("请输入有效的公网 URL。")
-  .refine((value) => /^https?:\/\//i.test(value), "URL 必须以 http:// 或 https:// 开头。");
+  .refine(
+    (value) => /^https?:\/\//i.test(value) || /^\/uploads\//i.test(value),
+    "请输入有效的公网 URL，或上传本地文件。"
+  );
 
 /** 创建视频任务的请求校验规则 */
 export const createGenerationSchema = z.object({

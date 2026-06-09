@@ -12,10 +12,19 @@ import {
   Music as MusicIcon,
   Play,
   Settings2,
-  Video
+  Upload,
+  Video,
+  X
 } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import type { CreationMode } from "./sidebar";
+
+/** 单个媒体输入的状态 */
+export type MediaEntry = {
+  url: string;         // URL 模式的输入值 / 上传后返回的服务端 URL
+  file: File | null;   // 待上传的文件对象（上传模式用）
+  mode: "url" | "upload";
+};
 
 
 /* ---- Slash command types ---- */
@@ -34,16 +43,84 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/seed", label: "随机种子", description: "设置随机种子，如 /seed 42" }
 ];
 
+/**
+ * 单个媒体上传行
+ * 纯上传模式：点击选择文件 → 显示文件信息 → 可移除
+ */
+function MediaField({
+  icon,
+  label,
+  entry,
+  onChange,
+  accept,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  entry: MediaEntry;
+  onChange: (entry: MediaEntry) => void;
+  accept: string;
+}) {
+  return (
+    <div className="media-url-field">
+      <label>
+        {icon}
+        {label}
+      </label>
+
+      {entry.file ? (
+        <div className="media-file-info">
+          <span className="media-file-name" title={entry.file.name}>
+            {entry.file.name}
+          </span>
+          <span className="media-file-size">{formatFileSize(entry.file.size)}</span>
+          <button
+            type="button"
+            className="media-file-remove"
+            onClick={() => onChange({ ...entry, file: null, url: "" })}
+            title="移除文件"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <label className="media-file-picker">
+          <Upload size={14} />
+          选择{label}文件
+          <input
+            type="file"
+            accept={accept}
+            className="media-file-input-hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                onChange({ ...entry, file, url: "" });
+              }
+              e.target.value = "";
+            }}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
+/** 文件大小友好显示 */
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function Composer({
   mode,
   prompt,
   onPromptChange,
-  imageUrl,
-  onImageUrlChange,
-  videoUrl,
-  onVideoUrlChange,
-  audioUrl,
-  onAudioUrlChange,
+  image,
+  onImageChange,
+  video,
+  onVideoChange,
+  audio,
+  onAudioChange,
   duration,
   onDurationChange,
   resolution,
@@ -68,12 +145,12 @@ export default function Composer({
   mode: CreationMode;
   prompt: string;
   onPromptChange: (value: string) => void;
-  imageUrl: string;
-  onImageUrlChange: (value: string) => void;
-  videoUrl: string;
-  onVideoUrlChange: (value: string) => void;
-  audioUrl: string;
-  onAudioUrlChange: (value: string) => void;
+  image: MediaEntry;
+  onImageChange: (entry: MediaEntry) => void;
+  video: MediaEntry;
+  onVideoChange: (entry: MediaEntry) => void;
+  audio: MediaEntry;
+  onAudioChange: (entry: MediaEntry) => void;
   duration: number;
   onDurationChange: (value: number) => void;
   resolution: string;
@@ -219,43 +296,36 @@ export default function Composer({
         ) : null}
       </div>
 
-      {/* 媒体 URL 输入 */}
+      {/* 媒体输入：支持 URL / 本地上传 */}
       <div className="media-section">
-        <span className="media-section-label">参考素材（公网 URL）</span>
+        <span className="media-section-label">参考素材</span>
         <div className="media-urls">
-          <div className="media-url-field">
-            <label>
-              <ImageIcon size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden="true" />
-              图片 URL
-            </label>
-            <input
-              value={imageUrl}
-              onChange={(event) => onImageUrlChange(event.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-          <div className="media-url-field">
-            <label>
-              <Video size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden="true" />
-              视频 URL
-            </label>
-            <input
-              value={videoUrl}
-              onChange={(event) => onVideoUrlChange(event.target.value)}
-              placeholder="https://..."
-            />
-          </div>
-          <div className="media-url-field">
-            <label>
-              <MusicIcon size={14} style={{ verticalAlign: "middle", marginRight: 4 }} aria-hidden="true" />
-              音频 URL
-            </label>
-            <input
-              value={audioUrl}
-              onChange={(event) => onAudioUrlChange(event.target.value)}
-              placeholder="https://..."
-            />
-          </div>
+          {/* ---- 图片 ---- */}
+          <MediaField
+            icon={<ImageIcon size={14} />}
+            label="图片"
+            entry={image}
+            onChange={onImageChange}
+            accept="image/*"
+          />
+
+          {/* ---- 视频 ---- */}
+          <MediaField
+            icon={<Video size={14} />}
+            label="视频"
+            entry={video}
+            onChange={onVideoChange}
+            accept="video/*"
+          />
+
+          {/* ---- 音频 ---- */}
+          <MediaField
+            icon={<MusicIcon size={14} />}
+            label="音频"
+            entry={audio}
+            onChange={onAudioChange}
+            accept="audio/*"
+          />
         </div>
       </div>
 

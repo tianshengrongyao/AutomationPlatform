@@ -21,7 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { CreateGenerationRequest, StoredTask } from "@/lib/types";
 import type { CreationMode } from "./sidebar";
 import { CAMERA_PRESETS, STYLE_PRESETS } from "./camera-presets";
-import Composer from "./composer";
+import Composer, { type MediaEntry } from "./composer";
 import Gallery from "./gallery";
 import ModelSelector from "./model-selector";
 import ResultPanel from "./result-panel";
@@ -72,9 +72,9 @@ export default function AppShell({
   // ====== 创作表单状态 ======
   const [mode, setMode] = useState<CreationMode>("text-to-video");
   const [prompt, setPrompt] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [videoUrl, setVideoUrl] = useState("");
-  const [audioUrl, setAudioUrl] = useState("");
+  const [image, setImage] = useState<MediaEntry>({ url: "", file: null, mode: "upload" });
+  const [video, setVideo] = useState<MediaEntry>({ url: "", file: null, mode: "upload" });
+  const [audio, setAudio] = useState<MediaEntry>({ url: "", file: null, mode: "upload" });
   const [ratio, setRatio] = useState("9:16");
   const [resolution, setResolution] = useState("1080p");
   const [duration, setDuration] = useState(5);
@@ -182,7 +182,8 @@ export default function AppShell({
   }
 
   // ====== 构建请求体并提交任务 ======
-  function buildRequest(): CreateGenerationRequest {
+  /** 构建请求体：URL 由调用方传入（可能是已上传后的服务端地址或用户手填的） */
+  function buildRequest(imageUrl: string, videoUrl: string, audioUrl: string): CreateGenerationRequest {
     // 构建带运镜和风格前缀的完整 prompt
     const cameraPreset = CAMERA_PRESETS.find((p) => p.id === selectedCamera);
     const stylePreset = STYLE_PRESETS.find((p) => p.id === selectedStyle);
@@ -220,13 +221,54 @@ export default function AppShell({
     };
   }
 
+  /** 上传单个文件到服务器，返回公开访问 URL */
+  async function uploadFile(file: File): Promise<string> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: form });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || "文件上传失败。");
+    }
+    const data = await res.json();
+    return data.url as string;
+  }
+
   async function submitTask() {
     setSubmitting(true);
     setNotice(null);
     try {
+      // 收集最终 URL：上传文件拿到的服务端 URL，或用户直接填的 URL
+      let finalImageUrl = image.url.trim();
+      let finalVideoUrl = video.url.trim();
+      let finalAudioUrl = audio.url.trim();
+
+      // 并行上传所有待上传文件
+      const uploadTasks: Promise<void>[] = [];
+      if (image.mode === "upload" && image.file) {
+        uploadTasks.push(
+          uploadFile(image.file).then((url) => { finalImageUrl = url; })
+        );
+      }
+      if (video.mode === "upload" && video.file) {
+        uploadTasks.push(
+          uploadFile(video.file).then((url) => { finalVideoUrl = url; })
+        );
+      }
+      if (audio.mode === "upload" && audio.file) {
+        uploadTasks.push(
+          uploadFile(audio.file).then((url) => { finalAudioUrl = url; })
+        );
+      }
+
+      if (uploadTasks.length > 0) {
+        setNotice({ tone: "info", text: "文件上传中..." });
+        await Promise.all(uploadTasks);
+      }
+
       const data = await fetchJson<{ task: StoredTask }>("/api/generations", {
         method: "POST",
-        body: JSON.stringify(buildRequest())
+        body: JSON.stringify(buildRequest(finalImageUrl, finalVideoUrl, finalAudioUrl))
       });
       setTasks((current) => [data.task, ...current.filter((t) => t.id !== data.task.id)]);
       setSelectedTaskId(data.task.id);
@@ -260,9 +302,9 @@ export default function AppShell({
     const imgMedia = task.request.media.find((m) => m.type === "image_url");
     const vidMedia = task.request.media.find((m) => m.type === "video_url");
     const audMedia = task.request.media.find((m) => m.type === "audio_url");
-    setImageUrl(imgMedia?.url || "");
-    setVideoUrl(vidMedia?.url || "");
-    setAudioUrl(audMedia?.url || "");
+    setImage({ url: imgMedia?.url || "", file: null, mode: "url" });
+    setVideo({ url: vidMedia?.url || "", file: null, mode: "url" });
+    setAudio({ url: audMedia?.url || "", file: null, mode: "url" });
     setView("create");
     setNotice({ tone: "info", text: "已加载模板参数，可直接生成或修改后提交。" });
   }
@@ -344,12 +386,12 @@ export default function AppShell({
             mode={mode}
             prompt={prompt}
             onPromptChange={setPrompt}
-            imageUrl={imageUrl}
-            onImageUrlChange={setImageUrl}
-            videoUrl={videoUrl}
-            onVideoUrlChange={setVideoUrl}
-            audioUrl={audioUrl}
-            onAudioUrlChange={setAudioUrl}
+            image={image}
+            onImageChange={setImage}
+            video={video}
+            onVideoChange={setVideo}
+            audio={audio}
+            onAudioChange={setAudio}
             duration={duration}
             onDurationChange={setDuration}
             resolution={resolution}

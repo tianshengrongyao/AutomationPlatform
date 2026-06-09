@@ -791,6 +791,126 @@ video {
   border-color: var(--color-accent);
 }
 
+/* ---- 媒体字段：URL/上传 双模式 ---- */
+.media-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.media-mode-tabs {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.media-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-tertiary);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.media-mode-tab.active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.media-mode-tab:not(.active):hover {
+  background: var(--color-surface-secondary);
+  color: var(--color-ink);
+}
+
+/* 文件选择按钮 */
+.media-file-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-ink-tertiary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.media-file-picker:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.media-file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* 已选文件信息条 */
+.media-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.media-file-name {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.media-file-size {
+  font-size: var(--text-xs);
+  color: var(--color-ink-tertiary);
+  white-space: nowrap;
+}
+
+.media-file-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-surface-secondary);
+  color: var(--color-ink-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.media-file-remove:hover {
+  background: var(--color-error);
+  color: #fff;
+}
+
 /* 高级参数面板 */
 .advanced-toggle {
   display: inline-flex;
