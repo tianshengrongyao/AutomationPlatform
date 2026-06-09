@@ -66,7 +66,7 @@ export async function setSessionCookie() {
   cookieStore.set(COOKIE_NAME, makeToken(), {
     httpOnly: true,    // JS 无法读取，防 XSS
     sameSite: "lax",   // 防止跨站请求携带
-    secure: process.env.NODE_ENV === "production",  // 生产环境仅 HTTPS
+    secure: false,     // HTTP 环境传 Cookie；升级 HTTPS 后改为 true
     path: "/",
     maxAge: MAX_AGE
   });
