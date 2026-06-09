@@ -355,12 +355,22 @@ export default function Composer({
             </div>
             <div className="advanced-field">
               <label>随机种子 (-1=随机)</label>
-              <input
-                type="number"
-                min={-1}
-                value={seed}
-                onChange={(e) => onSeedChange(Number(e.target.value))}
-              />
+              <div className="seed-input-row">
+                <input
+                  type="number"
+                  min={-1}
+                  value={seed}
+                  onChange={(e) => onSeedChange(Number(e.target.value))}
+                />
+                <button
+                  type="button"
+                  className="seed-dice-btn"
+                  onClick={() => onSeedChange(Math.floor(Math.random() * 4294967295))}
+                  title="随机生成"
+                >
+                  🎲
+                </button>
+              </div>
             </div>
             <div className="advanced-field">
               <label>引导系数 (1-10)</label>

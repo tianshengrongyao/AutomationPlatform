@@ -952,6 +952,37 @@ video {
 .media-file-type-tag[data-type="audio"] { background: #10b981; }
 .media-file-type-tag[data-type="unknown"] { background: var(--color-ink-tertiary); }
 
+/* 随机种子骰子按钮 */
+.seed-input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.seed-input-row input {
+  flex: 1;
+}
+.seed-dice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-size: 18px;
+  transition: border-color var(--transition-fast), transform 0.15s;
+  flex-shrink: 0;
+}
+.seed-dice-btn:hover {
+  border-color: var(--color-accent);
+  transform: scale(1.1);
+}
+.seed-dice-btn:active {
+  transform: scale(0.95);
+}
+
 .media-file-picker--unified {
   justify-content: center;
   padding: 14px;
