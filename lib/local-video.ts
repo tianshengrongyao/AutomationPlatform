@@ -5,7 +5,9 @@
  * 视频生成 API 返回的视频 URL 是有有效期的（通常 24 小时）
  * 如果不下载到本地，链接过期后视频就看不到了
  *
- * 这个模块负责：检测远程视频 → 下载到 public/generated-videos/ → 把本地地址替换到响应中
+ * 视频保存到 data/videos/（不在 public/ 中）
+ * 通过 /api/media/video/[filename] API 路由对外提供访问
+ * 因为 Next.js 生产模式不服务运行时新增到 public/ 的文件
  */
 
 import { createWriteStream } from "fs";
@@ -16,8 +18,8 @@ import path from "path";
 import { pipeline } from "stream/promises";
 import type { ArkTaskResponse } from "./types";
 
-/** 视频存放目录 */
-const VIDEO_DIR = path.join(process.cwd(), "public", "generated-videos");
+/** 视频缓存目录（不在 public/ 中 — 由 API 路由动态服务） */
+const VIDEO_DIR = path.join(process.cwd(), "data", "videos");
 
 /** 判断是否为远程 URL */
 function isRemoteUrl(value: string | undefined): value is string {
@@ -28,9 +30,9 @@ function isRemoteUrl(value: string | undefined): value is string {
 function localVideoPath(taskId: string) {
   const safeId = taskId.replace(/[^a-zA-Z0-9_-]/g, "_");
   return {
-    publicUrl: `/generated-videos/${safeId}.mp4`,   // 前端访问路径
-    filePath: path.join(VIDEO_DIR, `${safeId}.mp4`), // 磁盘绝对路径
-    tempPath: path.join(VIDEO_DIR, `${safeId}.mp4.tmp`) // 下载时的临时文件
+    publicUrl: `/api/media/video/${encodeURIComponent(safeId)}.mp4`, // API 路由访问路径
+    filePath: path.join(VIDEO_DIR, `${safeId}.mp4`),                  // 磁盘绝对路径
+    tempPath: path.join(VIDEO_DIR, `${safeId}.mp4.tmp`)               // 下载时的临时文件
   };
 }
 
@@ -117,13 +119,13 @@ export async function saveTaskVideoLocally(response: ArkTaskResponse) {
     await downloadFile(sourceUrl, filePath, tempPath);
   }
 
-  // 替换为本地地址，同时保留远程原始地址
+  // 替换为本地 API 地址，同时保留远程原始地址
   return {
     ...response,
     content: {
       ...response.content,
       remote_video_url: response.content?.remote_video_url || sourceUrl,  // 原始远程地址
-      local_video_url: publicUrl,   // 本地缓存地址
+      local_video_url: publicUrl,   // 本地 API 路由地址
       video_url: publicUrl          // 前端默认走本地
     }
   };

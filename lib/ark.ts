@@ -3,13 +3,13 @@
  *
  * 负责：
  * 1. 构建 API 请求体（buildArkPayload）
- * 2. 通过多种策略请求上游 API（Node HTTP / curl / PowerShell）
+ * 2. 通过 Node HTTP + curl 降级策略请求上游 API
  * 3. 将上游响应标准化为统一格式（normalizeArkTaskResponse）
  *
  * 为什么需要多种 HTTP 策略？
- * - Windows 上 Node.js 原生 HTTP 可能超时/断开
- * - curl 更稳定，作为 Windows 首选
- * - PowerShell 作为最终兜底方案
+ * - Node.js 原生 HTTP 在某些网络环境下可能超时/断开
+ * - curl 作为稳定的备选方案
+ * - Windows 首选 curl.exe，Linux/macOS 降级时用 curl
  */
 
 import type { ArkTaskResponse, CreateGenerationRequest } from "./types";
@@ -211,7 +211,7 @@ function parseResponseText(text: string) {
 }
 
 // ──────────────────────────────────────────────
-// 三种 HTTP 请求策略
+// Node HTTP + curl 降级策略
 // ──────────────────────────────────────────────
 
 /** 策略 1：Node.js 原生 HTTP（非 Windows 平台首选） */
@@ -254,30 +254,7 @@ async function requestJson(url: string, init: { method: "GET" | "POST"; body?: u
   });
 }
 
-/** PowerShell 字符串转义：单引号内的单引号要写成两个 */
-function psQuote(value: string) {
-  return `'${value.replace(/'/g, "''")}'`;
-}
-
-/** 策略 2：PowerShell Invoke-WebRequest（兜底方案） */
-async function requestJsonWithPowerShell(url: string, init: { method: "GET" | "POST"; body?: unknown }) {
-  const body = init.body === undefined ? "" : JSON.stringify(init.body);
-  const script = [
-    `$headers=@{Authorization=${psQuote(`Bearer ${getArkApiKey()}`)};'Content-Type'='application/json'}`,
-    init.method === "POST"
-      ? `$body=${psQuote(body)}; (Invoke-WebRequest -UseBasicParsing -Uri ${psQuote(url)} -Method POST -Headers $headers -Body $body -TimeoutSec 60).Content`
-      : `(Invoke-WebRequest -UseBasicParsing -Uri ${psQuote(url)} -Method GET -Headers $headers -TimeoutSec 60).Content`
-  ].join("; ");
-
-  const { stdout } = await execFileAsync("powershell.exe", ["-NoProfile", "-Command", script], {
-    timeout: 75000,
-    windowsHide: true,
-    maxBuffer: 1024 * 1024 * 4
-  });
-  return parseResponseText(stdout);
-}
-
-/** 策略 3：curl（跨平台稳定 HTTP 客户端） */
+/** 策略 2：curl（跨平台稳定 HTTP 客户端） */
 /** 根据平台获取 curl 的二进制名称 */
 function curlBinary() {
   return process.platform === "win32" ? "curl.exe" : "curl";
