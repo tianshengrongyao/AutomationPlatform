@@ -7,14 +7,13 @@ import { z } from "zod";
 
 /**
  * 素材 URL 校验
- * 支持两种形式：
- * 1. 公网 http/https URL
- * 2. 本地上传路径 /uploads/...
+ * 必须是 http/https 开头的公网可访问 URL
+ * （上传文件后返回的 /api/media/xxx 也是完整 http URL，通过此校验）
  */
 const publicUrl = z
   .string()
   .refine(
-    (value) => /^https?:\/\//i.test(value) || /^\/uploads\//i.test(value),
+    (value) => /^https?:\/\//i.test(value),
     "请输入有效的公网 URL，或上传本地文件。"
   );
 
