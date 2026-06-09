@@ -1115,7 +1115,7 @@ video {
 .result-panel {
   background: var(--color-bg-alt);
   border-left: 1px solid var(--color-border);
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -1139,8 +1139,11 @@ video {
 .result-content {
   display: flex;
   flex-direction: column;
-  padding: var(--space-lg);
-  gap: var(--space-lg);
+  padding: var(--space-md);
+  gap: var(--space-sm);
+  flex-shrink: 0;
+  max-height: 45vh;
+  overflow-y: auto;
 }
 
 /* ---- Status Pill ---- */
@@ -1278,6 +1281,11 @@ video {
 .history-section {
   border-top: 1px solid var(--color-border);
   padding: var(--space-lg);
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .history-section h3 {
@@ -1610,6 +1618,7 @@ video {
 /* ---- Video skeleton ---- */
 .video-skeleton {
   aspect-ratio: 9 / 16;
+  max-height: 200px;
   background: var(--color-bg-elevated);
   display: grid;
   place-items: center;

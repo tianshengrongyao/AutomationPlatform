@@ -131,14 +131,6 @@ export default function ResultPanel({
               <dt>分辨率</dt>
               <dd>{selectedTask.response?.resolution || selectedTask.request.options.resolution}</dd>
             </div>
-            <div className="meta-item">
-              <dt>时长</dt>
-              <dd>{selectedTask.response?.duration || selectedTask.request.options.duration}s</dd>
-            </div>
-            <div className="meta-item">
-              <dt>消耗 Token</dt>
-              <dd>{selectedTask.response?.usage?.total_tokens || "-"}</dd>
-            </div>
           </dl>
         </div>
       ) : (
