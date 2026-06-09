@@ -1497,14 +1497,14 @@ video {
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: #000;
+  aspect-ratio: 9 / 16;
 }
 
 .video-player-wrap video {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  aspect-ratio: 9 / 16;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .video-controls {
