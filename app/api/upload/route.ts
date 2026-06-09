@@ -92,8 +92,10 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
-    // 返回公开访问 URL
-    const publicUrl = `/uploads/${fileName}`;
+    // 返回完整公网 URL（外部 API 需要能直接访问）
+    const host = request.headers.get("host") || "localhost:3000";
+    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const publicUrl = `${protocol}://${host}/uploads/${fileName}`;
 
     return NextResponse.json({
       url: publicUrl,
