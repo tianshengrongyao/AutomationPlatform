@@ -23,10 +23,23 @@ import type { CreationMode } from "./sidebar";
 export type MediaEntry = {
   file: File | null;   // 本地文件
   url: string;         // 上传后返回的服务端完整 URL
+  previewUrl: string;  // 本地预览 URL（blob）
   label: string;       // 文件名
   size: number;        // 文件大小
   mediaType: "image" | "video" | "audio" | "unknown"; // 自动识别的类型
 };
+
+/** 从 File 创建 MediaEntry */
+export function makeMediaEntry(file: File): MediaEntry {
+  return {
+    file,
+    url: "",
+    previewUrl: URL.createObjectURL(file),
+    label: file.name,
+    size: file.size,
+    mediaType: classifyMime(file.type)
+  };
+}
 
 /** 根据 MIME 自动归类 */
 export function classifyMime(mime: string): MediaEntry["mediaType"] {
@@ -265,6 +278,19 @@ export default function Composer({
           <div className="media-file-list">
             {media.map((entry, idx) => (
               <div key={idx} className="media-file-item">
+                {/* 预览缩略图 */}
+                {entry.mediaType === "image" && entry.previewUrl && (
+                  <img src={entry.previewUrl} alt={entry.label} className="media-preview-thumb" />
+                )}
+                {entry.mediaType === "video" && entry.previewUrl && (
+                  <video src={entry.previewUrl} className="media-preview-thumb" muted />
+                )}
+                {entry.mediaType === "audio" && (
+                  <span className="media-preview-thumb media-preview-audio">
+                    <MusicIcon size={20} />
+                  </span>
+                )}
+
                 <span className="media-file-type-tag" data-type={entry.mediaType}>
                   {typeIcon(entry.mediaType)}
                   {typeLabel(entry.mediaType)}
@@ -276,7 +302,10 @@ export default function Composer({
                 <button
                   type="button"
                   className="media-file-remove"
-                  onClick={() => onMediaChange(media.filter((_, i) => i !== idx))}
+                  onClick={() => {
+                    URL.revokeObjectURL(entry.previewUrl);
+                    onMediaChange(media.filter((_, i) => i !== idx));
+                  }}
                   title="移除"
                 >
                   <X size={14} />
@@ -298,14 +327,7 @@ export default function Composer({
             onChange={(e) => {
               const files = Array.from(e.target.files || []);
               if (files.length === 0) return;
-              const entries: MediaEntry[] = files.map((f) => ({
-                file: f,
-                url: "",
-                label: f.name,
-                size: f.size,
-                mediaType: classifyMime(f.type)
-              }));
-              onMediaChange([...media, ...entries]);
+              onMediaChange([...media, ...files.map(makeMediaEntry)]);
               e.target.value = "";
             }}
           />

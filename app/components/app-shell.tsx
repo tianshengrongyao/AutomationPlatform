@@ -302,7 +302,7 @@ export default function AppShell({
     const templateMedia: MediaEntry[] = [];
     for (const m of task.request.media) {
       const mediaType = m.type === "image_url" ? "image" : m.type === "video_url" ? "video" : "audio";
-      templateMedia.push({ file: null, url: m.url, label: m.url.split("/").pop() || m.url, size: 0, mediaType });
+      templateMedia.push({ file: null, url: m.url, previewUrl: "", label: m.url.split("/").pop() || m.url, size: 0, mediaType });
     }
     setMedia(templateMedia);
     setView("create");
