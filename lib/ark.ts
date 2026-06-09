@@ -277,7 +277,24 @@ async function requestJsonWithPowerShell(url: string, init: { method: "GET" | "P
   return parseResponseText(stdout);
 }
 
-/** 策略 3：curl（Windows 首选，比 Node HTTP 更稳定） */
+/** 策略 3：curl（跨平台稳定 HTTP 客户端） */
+/** 根据平台获取 curl 的二进制名称 */
+function curlBinary() {
+  return process.platform === "win32" ? "curl.exe" : "curl";
+}
+
+/** curl 的 execFile 公共选项 */
+function curlExecOptions(timeoutMs: number) {
+  const opts: Record<string, unknown> = {
+    timeout: timeoutMs,
+    maxBuffer: 1024 * 1024 * 8
+  };
+  if (process.platform === "win32") {
+    opts.windowsHide = true;
+  }
+  return opts;
+}
+
 async function requestJsonWithCurl(url: string, init: { method: "GET" | "POST"; body?: unknown }) {
   const body = init.body === undefined ? undefined : JSON.stringify(init.body);
   const args = [
@@ -295,11 +312,7 @@ async function requestJsonWithCurl(url: string, init: { method: "GET" | "POST"; 
     args.push("--data-binary", body);
   }
 
-  const { stdout } = await execFileAsync("curl.exe", args, {
-    timeout: 100000,
-    windowsHide: true,
-    maxBuffer: 1024 * 1024 * 8
-  });
+  const { stdout } = await execFileAsync(curlBinary(), args, curlExecOptions(100000));
   // curl -w 输出的最后 3 位是 HTTP 状态码
   const status = Number(stdout.slice(-3));
   const text = stdout.slice(0, -4);
@@ -313,7 +326,7 @@ async function requestJsonWithCurl(url: string, init: { method: "GET" | "POST"; 
 /**
  * 选择请求策略的网关函数
  * - Windows → curl（最稳定）
- * - 非 Windows → Node HTTP，超时则降级到 PowerShell
+ * - Linux/macOS → Node HTTP 首选，失败降级到 curl
  */
 async function requestGatewayJson(url: string, init: { method: "GET" | "POST"; body?: unknown }) {
   if (process.platform === "win32") {
@@ -323,9 +336,9 @@ async function requestGatewayJson(url: string, init: { method: "GET" | "POST"; b
   try {
     return await requestJson(url, init);
   } catch (error) {
-    // Node HTTP 超时或断开 → 降级到 PowerShell
+    // Node HTTP 失败 → 降级到 curl（Linux 上 PowerShell 不存在）
     if (error instanceof Error && /timed out|socket hang up|ECONNRESET|ETIMEDOUT/i.test(error.message)) {
-      return requestJsonWithPowerShell(url, init);
+      return requestJsonWithCurl(url, init);
     }
     throw error;
   }
