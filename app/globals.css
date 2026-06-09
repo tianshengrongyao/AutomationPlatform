@@ -911,6 +911,54 @@ video {
   color: #fff;
 }
 
+/* ---- 统一媒体列表 ---- */
+.media-section-hint {
+  font-weight: var(--weight-normal);
+  color: var(--color-ink-tertiary);
+}
+
+.media-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: var(--space-sm);
+}
+
+.media-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.media-file-type-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  flex-shrink: 0;
+  color: #fff;
+}
+.media-file-type-tag[data-type="image"] { background: #6366f1; }
+.media-file-type-tag[data-type="video"] { background: #f43f5e; }
+.media-file-type-tag[data-type="audio"] { background: #10b981; }
+.media-file-type-tag[data-type="unknown"] { background: var(--color-ink-tertiary); }
+
+.media-file-picker--unified {
+  justify-content: center;
+  padding: 14px;
+  border-style: dashed;
+  font-weight: var(--weight-medium);
+}
+
 /* 高级参数面板 */
 .advanced-toggle {
   display: inline-flex;

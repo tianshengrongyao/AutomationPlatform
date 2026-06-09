@@ -19,12 +19,22 @@ import {
 import { useCallback, useRef, useState } from "react";
 import type { CreationMode } from "./sidebar";
 
-/** 单个媒体输入的状态 */
+/** 媒体文件条目 — 自动根据 MIME 类型归类 */
 export type MediaEntry = {
-  url: string;         // URL 模式的输入值 / 上传后返回的服务端 URL
-  file: File | null;   // 待上传的文件对象（上传模式用）
-  mode: "url" | "upload";
+  file: File | null;   // 本地文件
+  url: string;         // 上传后返回的服务端完整 URL
+  label: string;       // 文件名
+  size: number;        // 文件大小
+  mediaType: "image" | "video" | "audio" | "unknown"; // 自动识别的类型
 };
+
+/** 根据 MIME 自动归类 */
+export function classifyMime(mime: string): MediaEntry["mediaType"] {
+  if (mime.startsWith("image/")) return "image";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  return "unknown";
+}
 
 
 /* ---- Slash command types ---- */
@@ -43,65 +53,20 @@ const SLASH_COMMANDS: SlashCommand[] = [
   { command: "/seed", label: "随机种子", description: "设置随机种子，如 /seed 42" }
 ];
 
-/**
- * 单个媒体上传行
- * 纯上传模式：点击选择文件 → 显示文件信息 → 可移除
- */
-function MediaField({
-  icon,
-  label,
-  entry,
-  onChange,
-  accept,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  entry: MediaEntry;
-  onChange: (entry: MediaEntry) => void;
-  accept: string;
-}) {
-  return (
-    <div className="media-url-field">
-      <label>
-        {icon}
-        {label}
-      </label>
+/** 媒体类型对应的图标 */
+function typeIcon(t: MediaEntry["mediaType"]) {
+  if (t === "image") return <ImageIcon size={14} />;
+  if (t === "video") return <Video size={14} />;
+  if (t === "audio") return <MusicIcon size={14} />;
+  return null;
+}
 
-      {entry.file ? (
-        <div className="media-file-info">
-          <span className="media-file-name" title={entry.file.name}>
-            {entry.file.name}
-          </span>
-          <span className="media-file-size">{formatFileSize(entry.file.size)}</span>
-          <button
-            type="button"
-            className="media-file-remove"
-            onClick={() => onChange({ ...entry, file: null, url: "" })}
-            title="移除文件"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      ) : (
-        <label className="media-file-picker">
-          <Upload size={14} />
-          选择{label}文件
-          <input
-            type="file"
-            accept={accept}
-            className="media-file-input-hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onChange({ ...entry, file, url: "" });
-              }
-              e.target.value = "";
-            }}
-          />
-        </label>
-      )}
-    </div>
-  );
+/** 媒体类型对应的中文标签 */
+function typeLabel(t: MediaEntry["mediaType"]) {
+  if (t === "image") return "图片";
+  if (t === "video") return "视频";
+  if (t === "audio") return "音频";
+  return "文件";
 }
 
 /** 文件大小友好显示 */
@@ -115,12 +80,8 @@ export default function Composer({
   mode,
   prompt,
   onPromptChange,
-  image,
-  onImageChange,
-  video,
-  onVideoChange,
-  audio,
-  onAudioChange,
+  media,
+  onMediaChange,
   duration,
   onDurationChange,
   resolution,
@@ -145,12 +106,8 @@ export default function Composer({
   mode: CreationMode;
   prompt: string;
   onPromptChange: (value: string) => void;
-  image: MediaEntry;
-  onImageChange: (entry: MediaEntry) => void;
-  video: MediaEntry;
-  onVideoChange: (entry: MediaEntry) => void;
-  audio: MediaEntry;
-  onAudioChange: (entry: MediaEntry) => void;
+  media: MediaEntry[];
+  onMediaChange: (entries: MediaEntry[]) => void;
   duration: number;
   onDurationChange: (value: number) => void;
   resolution: string;
@@ -296,37 +253,63 @@ export default function Composer({
         ) : null}
       </div>
 
-      {/* 媒体输入：支持 URL / 本地上传 */}
+      {/* 统一媒体上传区 */}
       <div className="media-section">
-        <span className="media-section-label">参考素材</span>
-        <div className="media-urls">
-          {/* ---- 图片 ---- */}
-          <MediaField
-            icon={<ImageIcon size={14} />}
-            label="图片"
-            entry={image}
-            onChange={onImageChange}
-            accept="image/*"
-          />
+        <span className="media-section-label">
+          参考素材
+          <span className="media-section-hint">（已选 {media.length} 个文件）</span>
+        </span>
 
-          {/* ---- 视频 ---- */}
-          <MediaField
-            icon={<Video size={14} />}
-            label="视频"
-            entry={video}
-            onChange={onVideoChange}
-            accept="video/*"
-          />
+        {/* 已选文件列表 */}
+        {media.length > 0 && (
+          <div className="media-file-list">
+            {media.map((entry, idx) => (
+              <div key={idx} className="media-file-item">
+                <span className="media-file-type-tag" data-type={entry.mediaType}>
+                  {typeIcon(entry.mediaType)}
+                  {typeLabel(entry.mediaType)}
+                </span>
+                <span className="media-file-name" title={entry.label}>
+                  {entry.label}
+                </span>
+                <span className="media-file-size">{formatFileSize(entry.size)}</span>
+                <button
+                  type="button"
+                  className="media-file-remove"
+                  onClick={() => onMediaChange(media.filter((_, i) => i !== idx))}
+                  title="移除"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
 
-          {/* ---- 音频 ---- */}
-          <MediaField
-            icon={<MusicIcon size={14} />}
-            label="音频"
-            entry={audio}
-            onChange={onAudioChange}
-            accept="audio/*"
+        {/* 添加文件按钮 */}
+        <label className="media-file-picker media-file-picker--unified">
+          <Upload size={14} />
+          选择文件（图片 / 视频 / 音频）
+          <input
+            type="file"
+            accept="image/*,video/*,audio/*"
+            multiple
+            className="media-file-input-hidden"
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (files.length === 0) return;
+              const entries: MediaEntry[] = files.map((f) => ({
+                file: f,
+                url: "",
+                label: f.name,
+                size: f.size,
+                mediaType: classifyMime(f.type)
+              }));
+              onMediaChange([...media, ...entries]);
+              e.target.value = "";
+            }}
           />
-        </div>
+        </label>
       </div>
 
       {/* 高级参数 */}

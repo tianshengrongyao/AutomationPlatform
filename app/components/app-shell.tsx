@@ -72,9 +72,7 @@ export default function AppShell({
   // ====== 创作表单状态 ======
   const [mode, setMode] = useState<CreationMode>("text-to-video");
   const [prompt, setPrompt] = useState("");
-  const [image, setImage] = useState<MediaEntry>({ url: "", file: null, mode: "upload" });
-  const [video, setVideo] = useState<MediaEntry>({ url: "", file: null, mode: "upload" });
-  const [audio, setAudio] = useState<MediaEntry>({ url: "", file: null, mode: "upload" });
+  const [media, setMedia] = useState<MediaEntry[]>([]);
   const [ratio, setRatio] = useState("9:16");
   const [resolution, setResolution] = useState("1080p");
   const [duration, setDuration] = useState(5);
@@ -182,8 +180,8 @@ export default function AppShell({
   }
 
   // ====== 构建请求体并提交任务 ======
-  /** 构建请求体：URL 由调用方传入（可能是已上传后的服务端地址或用户手填的） */
-  function buildRequest(imageUrl: string, videoUrl: string, audioUrl: string): CreateGenerationRequest {
+  /** 构建请求体：从统一媒体数组和上传后的 URL 生成 media 字段 */
+  function buildRequest(uploadedUrls: { image: string[]; video: string[]; audio: string[] }): CreateGenerationRequest {
     // 构建带运镜和风格前缀的完整 prompt
     const cameraPreset = CAMERA_PRESETS.find((p) => p.id === selectedCamera);
     const stylePreset = STYLE_PRESETS.find((p) => p.id === selectedStyle);
@@ -195,14 +193,20 @@ export default function AppShell({
     const negativePrefix = negativePrompt.trim() ? `排除以下内容：${negativePrompt.trim()}` : "";
     const fullPrompt = [finalPrompt, negativePrefix].filter(Boolean).join("\n");
 
-    const media = [];
-    if (imageUrl.trim()) media.push({ type: "image_url" as const, url: imageUrl.trim() });
-    if (videoUrl.trim()) media.push({ type: "video_url" as const, url: videoUrl.trim() });
-    if (audioUrl.trim()) media.push({ type: "audio_url" as const, url: audioUrl.trim() });
+    const mediaItems = [];
+    for (const url of uploadedUrls.image) {
+      mediaItems.push({ type: "image_url" as const, url });
+    }
+    for (const url of uploadedUrls.video) {
+      mediaItems.push({ type: "video_url" as const, url });
+    }
+    for (const url of uploadedUrls.audio) {
+      mediaItems.push({ type: "audio_url" as const, url });
+    }
 
     return {
       prompt: fullPrompt,
-      media,
+      media: mediaItems,
       uploadedImages: [],
       options: {
         ratio,
@@ -238,37 +242,33 @@ export default function AppShell({
     setSubmitting(true);
     setNotice(null);
     try {
-      // 收集最终 URL：上传文件拿到的服务端 URL，或用户直接填的 URL
-      let finalImageUrl = image.url.trim();
-      let finalVideoUrl = video.url.trim();
-      let finalAudioUrl = audio.url.trim();
+      // 按类型收集最终 URL：先把所有待上传文件发到服务器
+      const uploadedUrls = { image: [] as string[], video: [] as string[], audio: [] as string[] };
 
-      // 并行上传所有待上传文件
-      const uploadTasks: Promise<void>[] = [];
-      if (image.mode === "upload" && image.file) {
-        uploadTasks.push(
-          uploadFile(image.file).then((url) => { finalImageUrl = url; })
+      if (media.length > 0) {
+        setNotice({ tone: "info", text: `正在上传 ${media.length} 个文件...` });
+        const results = await Promise.all(
+          media.map(async (entry) => {
+            if (!entry.file) return null;
+            try {
+              const url = await uploadFile(entry.file);
+              return { url, mediaType: entry.mediaType };
+            } catch {
+              return null; // 单个文件失败不阻塞整体
+            }
+          })
         );
-      }
-      if (video.mode === "upload" && video.file) {
-        uploadTasks.push(
-          uploadFile(video.file).then((url) => { finalVideoUrl = url; })
-        );
-      }
-      if (audio.mode === "upload" && audio.file) {
-        uploadTasks.push(
-          uploadFile(audio.file).then((url) => { finalAudioUrl = url; })
-        );
-      }
 
-      if (uploadTasks.length > 0) {
-        setNotice({ tone: "info", text: "文件上传中..." });
-        await Promise.all(uploadTasks);
+        for (const r of results) {
+          if (r?.mediaType === "image") uploadedUrls.image.push(r.url);
+          if (r?.mediaType === "video") uploadedUrls.video.push(r.url);
+          if (r?.mediaType === "audio") uploadedUrls.audio.push(r.url);
+        }
       }
 
       const data = await fetchJson<{ task: StoredTask }>("/api/generations", {
         method: "POST",
-        body: JSON.stringify(buildRequest(finalImageUrl, finalVideoUrl, finalAudioUrl))
+        body: JSON.stringify(buildRequest(uploadedUrls))
       });
       setTasks((current) => [data.task, ...current.filter((t) => t.id !== data.task.id)]);
       setSelectedTaskId(data.task.id);
@@ -298,13 +298,13 @@ export default function AppShell({
     setReturnLastFrame(task.request.options.returnLastFrame);
     setSeed(task.request.options.seed ?? -1);
     setPriority(task.request.options.priority);
-    // Extract URLs from media
-    const imgMedia = task.request.media.find((m) => m.type === "image_url");
-    const vidMedia = task.request.media.find((m) => m.type === "video_url");
-    const audMedia = task.request.media.find((m) => m.type === "audio_url");
-    setImage({ url: imgMedia?.url || "", file: null, mode: "url" });
-    setVideo({ url: vidMedia?.url || "", file: null, mode: "url" });
-    setAudio({ url: audMedia?.url || "", file: null, mode: "url" });
+    // Extract URLs from media and populate new entries
+    const templateMedia: MediaEntry[] = [];
+    for (const m of task.request.media) {
+      const mediaType = m.type === "image_url" ? "image" : m.type === "video_url" ? "video" : "audio";
+      templateMedia.push({ file: null, url: m.url, label: m.url.split("/").pop() || m.url, size: 0, mediaType });
+    }
+    setMedia(templateMedia);
     setView("create");
     setNotice({ tone: "info", text: "已加载模板参数，可直接生成或修改后提交。" });
   }
@@ -386,12 +386,8 @@ export default function AppShell({
             mode={mode}
             prompt={prompt}
             onPromptChange={setPrompt}
-            image={image}
-            onImageChange={setImage}
-            video={video}
-            onVideoChange={setVideo}
-            audio={audio}
-            onAudioChange={setAudio}
+            media={media}
+            onMediaChange={setMedia}
             duration={duration}
             onDurationChange={setDuration}
             resolution={resolution}
