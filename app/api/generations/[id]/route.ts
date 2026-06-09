@@ -7,7 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { getArkTask } from "@/lib/ark";
-import { jsonError, requireSession, statusFromUpstreamError } from "@/lib/http";
+import { jsonError, parseUpstreamError, requireSession, statusFromUpstreamError } from "@/lib/http";
 import { saveTaskVideoLocally } from "@/lib/local-video";
 import { deleteTask, getStoredTask, updateTask } from "@/lib/task-store";
 
@@ -48,7 +48,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     });
   } catch (error) {
     const details = error instanceof Error ? error.message : error;
-    return jsonError("查询视频生成任务失败。", statusFromUpstreamError(details), details);
+    const readableMessage = parseUpstreamError(details);
+    return jsonError(readableMessage, statusFromUpstreamError(details));
   }
 }
 

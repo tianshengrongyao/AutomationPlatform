@@ -7,7 +7,7 @@
 
 import { NextResponse } from "next/server";
 import { createArkTask } from "@/lib/ark";
-import { jsonError, requireSession, statusFromUpstreamError } from "@/lib/http";
+import { jsonError, parseUpstreamError, requireSession, statusFromUpstreamError } from "@/lib/http";
 import { saveTaskVideoLocally } from "@/lib/local-video";
 import { addTask, listTasks } from "@/lib/task-store";
 import { createGenerationSchema } from "@/lib/validation";
@@ -43,6 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ task });
   } catch (error) {
     const details = error instanceof Error ? error.message : error;
-    return jsonError("创建视频生成任务失败。", statusFromUpstreamError(details), details);
+    const readableMessage = parseUpstreamError(details);
+    return jsonError(readableMessage, statusFromUpstreamError(details));
   }
 }
