@@ -99,28 +99,6 @@ export default function ResultPanel({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="task-actions">
-            <button type="button" onClick={() => onRefreshTask(selectedTask.id)}>
-              <RefreshCw size={15} />
-              刷新
-            </button>
-            <button type="button" onClick={() => onCopyTaskId(selectedTask.id)}>
-              <Clipboard size={15} />
-              复制 ID
-            </button>
-            {selectedTask.response?.content?.video_url ? (
-              <a
-                href={selectedTask.response.content.video_url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ArrowUpRight size={15} />
-                打开视频
-              </a>
-            ) : null}
-          </div>
-
           {/* Meta */}
           <dl className="meta-grid">
             <div className="meta-item">
