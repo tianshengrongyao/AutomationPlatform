@@ -129,7 +129,7 @@ export default function Composer({
   submitting: boolean;
   onSubmit: () => void;
 }) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
   const [slashMenu, setSlashMenu] = useState<{
     open: boolean;
     index: number;
