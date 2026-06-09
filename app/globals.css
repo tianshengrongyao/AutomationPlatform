@@ -1142,7 +1142,7 @@ video {
   padding: var(--space-md);
   gap: var(--space-sm);
   flex-shrink: 0;
-  max-height: 45vh;
+  max-height: 65vh;
   overflow-y: auto;
 }
 
